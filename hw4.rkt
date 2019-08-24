@@ -44,3 +44,21 @@
            [v1 (cons 0 (car pair))]
            [p1 (cdr pair)])
     (lambda() (cons v1 (stream-add-zero p1)))))
+
+
+(define (cycle-list xs ys)
+  (letrec ([helper (lambda(xs ys n) 
+                     (cons (cons (list-nth-mod xs n) (list-nth-mod ys n)) (lambda() (helper xs ys (+ n 1)))))])
+    (lambda() (helper xs ys 0))))
+
+
+(define (vector-assoc v vec)
+  (letrec ([size (vector-length vec)]
+        [vector-assoc-helper (lambda(idx) 
+                               (if (< idx size)
+                                   (begin (let ([elm (vector-ref vec idx)])
+                                            (if (and (pair? elm) (equal? (car elm) v))
+                                                elm
+                                                (vector-assoc-helper (+ idx 1)))))
+                                   #f))])
+    (vector-assoc-helper 0)))    
