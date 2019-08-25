@@ -61,4 +61,49 @@
                                                 elm
                                                 (vector-assoc-helper (+ idx 1)))))
                                    #f))])
-    (vector-assoc-helper 0)))    
+    (vector-assoc-helper 0)))
+
+
+(define (ret_fn key xs)
+  (letrec ([memo (make-vector n)]
+           [search_pair (assoc key xs)])
+    (if search_pair
+        (begin
+          (vector-set! memo pos search_pair)
+          (cdr search_pair))
+        #f)))
+
+(define (fib n)
+  (if (<= n 0)
+      (error "invalid argument")
+      (letrec ([memo null]
+               [fib_helper 
+                (lambda(n)
+                  (letrec ([v (assoc n memo)])
+                    (if v
+                        (cdr v)
+                        (begin 
+                          (letrec ([new_ans (if (>= n 3)
+                                                (+ (fib_helper (- n 2)) 
+                                                   (fib_helper (- n 1)))
+                                                1)])
+                            (set! memo (cons (cons n new_ans) memo))
+                            new_ans)))))])
+      (fib_helper n))))
+
+(define (fib_slow n)
+  (if (<= n 0)
+      (error "invalid argument")
+      (letrec ([fib_helper 
+                (lambda(n memo)
+                  (letrec ([v (assoc n memo)])
+                    (if v
+                        (cdr v)
+                        (begin 
+                          (letrec ([new_ans (if (>= n 3)
+                                                (+ (fib_helper (- n 2) memo) 
+                                                   (fib_helper (- n 1) memo))
+                                                1)])
+                            (set! memo (cons (cons n new_ans) memo))
+                            new_ans)))))])
+      (fib_helper n null))))
