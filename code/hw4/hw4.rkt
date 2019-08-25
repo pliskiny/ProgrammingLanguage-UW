@@ -48,7 +48,7 @@
     (lambda() (cons v1 (stream-add-zero p1)))))
 
 
-(define (cycle-list xs ys)
+(define (cycle-lists xs ys)
   (letrec ([helper (lambda(xs ys n) 
                      (cons (cons (list-nth-mod xs n) (list-nth-mod ys n)) (lambda() (helper xs ys (+ n 1)))))])
     (lambda() (helper xs ys 0))))
