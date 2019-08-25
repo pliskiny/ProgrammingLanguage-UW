@@ -1,5 +1,7 @@
 #lang racket
 
+(provide (all-defined-out));; so we can put tests in a second file
+
 (define (sequence low high stride)
   (if (<= low high)
       (cons low (sequence (+ low stride) high stride))
@@ -71,14 +73,14 @@
       (let ([cache_found (assoc key memo)])
         (if cache_found
           cache_found
-          (begin 
-            found = (assoc key xs)
-            (if found
-              (begin
-                (vector-set! memo pos found)
-                (set! pos (remainder (+ pos 1) n))
-                found)
-              #f)))))))
+          (begin
+            (let ([found (assoc key xs)])
+              (if found
+                  (begin
+                    (vector-set! memo pos found)
+                    (set! pos (remainder (+ pos 1) n))
+                    found)
+                  #f))))))))
       
 
 (define (fib n)
