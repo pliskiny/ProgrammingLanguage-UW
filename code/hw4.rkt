@@ -64,14 +64,22 @@
     (vector-assoc-helper 0)))
 
 
-(define (ret_fn key xs)
-  (letrec ([memo (make-vector n)]
-           [search_pair (assoc key xs)])
-    (if search_pair
-        (begin
-          (vector-set! memo pos search_pair)
-          (cdr search_pair))
-        #f)))
+(define (cached-assoc xs n)
+  (let ([memo (make-vector n)]
+        [pos 0])
+    (lambda(key)
+      (let ([cache_found (assoc key memo)])
+        (if cache_found
+          cache_found
+          (begin 
+            found = (assoc key xs)
+            (if found
+              (begin
+                (vector-set! memo pos found)
+                (set! pos (remainder (+ pos 1) n))
+                found)
+              #f)))))))
+      
 
 (define (fib n)
   (if (<= n 0)
