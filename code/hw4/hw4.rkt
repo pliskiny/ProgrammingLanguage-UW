@@ -21,7 +21,7 @@
   (if (= n 0) 
       null
       (letrec ([ p (s)] [num (car p)] [next_s (cdr p)])
-        (cons num stream-for-n-steps next_s (- n 1)))))
+        (cons num (stream-for-n-steps next_s (- n 1))))))
 
 (define funny-number-stream
   (letrec ([funny-number-stream-helper 
@@ -70,7 +70,7 @@
   (let ([memo (make-vector n)]
         [pos 0])
     (lambda(key)
-      (let ([cache_found (assoc key memo)])
+      (let ([cache_found (vector-assoc key memo)])
         (if cache_found
           cache_found
           (begin
