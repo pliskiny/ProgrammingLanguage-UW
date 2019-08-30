@@ -16,9 +16,7 @@
 (struct snd  (e)    #:transparent) ;; get second part of a pair
 (struct aunit ()    #:transparent) ;; unit value -- good for ending a list
 (struct isaunit (e) #:transparent) ;; evaluate to 1 if e is unit else 0
-
-;; a closure is not in "source" programs but /is/ a MUPL value; it is what functions evaluate to
-(struct closure (env fun) #:transparent) 
+(struct closure (env fun) #:transparent) ;; a closure is not in "source" programs but /is/ a MUPL value; it is what functions evaluate to
 
 ;; Problem 1
 
@@ -38,16 +36,41 @@
 ;; We will test eval-under-env by calling it directly even though
 ;; "in real life" it would be a helper function of eval-exp.
 (define (eval-under-env e env)
-  (cond [(var? e) 
+  (cond [(aunit? e) e]
+
+        [(var? e) 
          (envlookup env (var-string e))]
+
         [(add? e) 
-         (let ([v1 (eval-under-env (add-e1 e) env)]
-               [v2 (eval-under-env (add-e2 e) env)])
-           (if (and (int? v1)
-                    (int? v2))
-               (int (+ (int-num v1) 
-                       (int-num v2)))
+         (let ([v1 (eval-under-env (add-e1 e) env)] [v2 (eval-under-env (add-e2 e) env)])
+           (if (and (int? v1) (int? v2))
+               (int (+ (int-num v1) (int-num v2)))
                (error "MUPL addition applied to non-number")))]
+
+        [(ifgreater? e)
+         (let ([v1 (eval-under-env (ifgreater-e1 e) env)] [v2 (eval-under-env (ifgreater-e2 e) env)])
+           (if (and (int? v1) (int? v2))
+               (if (> (int-num v1) (int-num v2))
+                   (eval-under-env (ifgreater-e3 e) env)
+                   (eval-under-env (ifgreater-e4 e) env))
+               (error "MUPL ifgreater applied to non-number")))]
+
+        [(apair? e)
+         (let ([v1 (eval-under-env (apair-e1 e) env)] [v2 (eval-under-env (apair-e2 e) env)])
+           (apair v1 v2))]
+
+        [(fst? e)
+         (let ([pair (fst-e e)])
+           (if (apair? pair)
+             (eval-under-env (apair-e1 pair) env)
+             (error "MUPL fst applied to non-apair")))]
+
+        [(snd? e)
+         (let ([pair (snd-e e)])
+           (if (apair? pair)
+             (eval-under-env (apair-e2 pair) env)
+             (error "MUPL fst applied to non-apair")))]        
+        
         ;; CHANGE add more cases here
         [#t (error (format "bad MUPL expression: ~v" e))]))
 
