@@ -19,8 +19,21 @@
 (struct closure (env fun) #:transparent) ;; a closure is not in "source" programs but /is/ a MUPL value; it is what functions evaluate to
 
 ;; Problem 1
+(define (racket-foldr f xs acc)
+  (if (null? xs)
+      acc
+      (f (car xs) (racket-foldr f (cdr xs) acc))))
 
-;; CHANGE (put your solutions here)
+(define (mupl-foldr f xs acc)
+  (if (isaunit xs)
+      acc
+      (f (fst xs) (mupl-foldr f (snd xs) acc))))
+
+(define (racketlist->mupllist xs)
+  (racket-foldr (lambda(first second) (apair first second)) xs (aunit)))
+
+(define (mupllist->racketlist xs)
+  (mupl-foldr (lambda(first second) (list first second)) xs null))
 
 ;; Problem 2
 
@@ -40,6 +53,8 @@
 
         [(var? e) 
          (envlookup env (var-string e))]
+
+        [(int? e) e]
 
         [(add? e) 
          (let ([v1 (eval-under-env (add-e1 e) env)] [v2 (eval-under-env (add-e2 e) env)])
@@ -63,13 +78,33 @@
          (let ([pair (fst-e e)])
            (if (apair? pair)
              (eval-under-env (apair-e1 pair) env)
-             (error "MUPL fst applied to non-apair")))]
+             (error "not apair, can not get first part")))]
 
         [(snd? e)
          (let ([pair (snd-e e)])
            (if (apair? pair)
              (eval-under-env (apair-e2 pair) env)
-             (error "MUPL fst applied to non-apair")))]        
+             (error "not apair, can not get second part")))]        
+
+        [(mlet? e)
+         (let ([env-local (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) null)])
+           (eval-under-env (mlet-body e) env-local))]
+
+        [(fun? e)
+         (closure (list) e)]
+
+        [(call? e)
+         (let ([exp-of-closure (call-funexp e)])
+           (if (closure? exp-of-closure)
+               (letrec ([exp-of-fun (closure-fun exp-of-closure)]                        
+                        [body-of-fun (fun-body exp-of-fun)]
+                        [arg-name (fun-formal exp-of-fun)] 
+                        [actual-arg (eval-under-env (call-actual e) env)]                             
+                        [env-of-closure (cons (cons arg-name actual-arg) (closure-env exp-of-closure))])
+                 (eval-under-env body-of-fun env-of-closure))
+               (error "call e1 e2, e1 is not closure")))]
+
+        [(closure? e) e]
         
         ;; CHANGE add more cases here
         [#t (error (format "bad MUPL expression: ~v" e))]))
@@ -88,7 +123,17 @@
 
 ;; Problem 4
 
-(define mupl-map "CHANGE")
+(define (mupl-map-no-curry f xs)
+  (if (null? xs)
+      null
+      (cons (f (car xs)) (mupl-map f (cdr xs)))))
+
+(define (mupl-map f)
+  (letrec ([ret-fn (lambda(xs)
+                     (if (null? xs)
+                         null
+                         (cons (f (car xs) (ret-fn (cdr xs))))))])
+    ret-fn))  
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
