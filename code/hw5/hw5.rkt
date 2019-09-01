@@ -122,7 +122,7 @@
 ;; Problem 3
 
 (define (ifaunit e1 e2 e3)
-  (if (isaunit e1) (eval-under-env e2 null) (eval-under-env e3 null)))
+  (if (isaunit e1) (eval-exp e2) (eval-exp e3)))
 
 (define (add-new-var-env elm env)
   (let ([name (car elm)]
@@ -141,25 +141,28 @@
       (error "MUPL ifeq applied to non-number")))
 
 ;; Problem 4
-
-(define (mupl-map-no-curry f xs)
-  (if (null? xs)
-      null
-      (cons (f (car xs)) (mupl-map f (cdr xs)))))
+(define (racket-map f)
+  (letrec ([ret-fn (lambda(xs)
+                     (if (null? xs)                         
+                         null
+                         (cons (f (car xs)) (ret-fn (cdr xs)))))])
+    ret-fn))
 
 (define (mupl-map f)
-  (letrec ([ret-fn (lambda(xs)
-                     (if (isaunit xs)                         
-                         aunit
-                         (apair (f (fst xs)) (ret-fn (snd xs)))))])
-    ret-fn))  
+  (letrec ([ret-fn (fun #f "xs"
+                        (if (isaunit (var "xs"))
+                            (aunit)
+                            (apair (call (eval-exp f) (fst (var "xs"))) (call (eval-exp ret-fn) (snd (var "xs"))))))])
+    ret-fn))
+  
+
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
         (call (var "map") (fun #f "x" (add (var "x") (int 9))))))
 
 (define (mupl-mapAddS i)
-  (mupl-map (lambda(x) (eval-under-env (add i x) null))))
+  (mupl-map (lambda(x) (eval-exp (add i x)))))
   
 
 ;; Challenge Problem
