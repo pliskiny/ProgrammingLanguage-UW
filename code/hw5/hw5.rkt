@@ -19,6 +19,11 @@
 (struct closure (env fun) #:transparent) ;; a closure is not in "source" programs but /is/ a MUPL value; it is what functions evaluate to
 
 ;; Problem 1
+(define (racket-foldl f xs acc)
+  (if (null? xs)
+      acc
+      (racket-foldl f (cdr xs) (f (car xs) acc))))
+
 (define (racket-foldr f xs acc)
   (if (null? xs)
       acc
@@ -48,8 +53,14 @@
 ;; DO add more cases for other kinds of MUPL expressions.
 ;; We will test eval-under-env by calling it directly even though
 ;; "in real life" it would be a helper function of eval-exp.
+(define (eval-exp e)
+  (eval-under-env e null))
+
 (define (eval-under-env e env)
   (cond [(aunit? e) e]
+
+        [(isaunit? e)
+         (if (aunit? (isaunit-e e)) 1 0)]
 
         [(var? e) 
          (envlookup env (var-string e))]
@@ -87,8 +98,7 @@
              (error "not apair, can not get second part")))]        
 
         [(mlet? e)
-         (let ([env-local (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) null)])
-           (eval-under-env (mlet-body e) env-local))]
+         (eval-under-env (mlet-body e) (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) null))]
 
         [(fun? e)
          (closure (list) e)]
@@ -108,18 +118,27 @@
         
         ;; CHANGE add more cases here
         [#t (error (format "bad MUPL expression: ~v" e))]))
-
-;; Do NOT change
-(define (eval-exp e)
-  (eval-under-env e null))
         
 ;; Problem 3
 
-(define (ifaunit e1 e2 e3) "CHANGE")
+(define (ifaunit e1 e2 e3)
+  (if (isaunit e1) (eval-under-env e2 null) (eval-under-env e3 null)))
 
-(define (mlet* lstlst e2) "CHANGE")
+(define (add-new-var-env elm env)
+  (let ([name (car elm)]
+        [val (eval-under-env (cdr elm) env)])
+    (cons (cons name val) env)))
 
-(define (ifeq e1 e2 e3 e4) "CHANGE")
+(define (mlet* lstlst e2)
+  (let ([env (racket-foldl add-new-var-env lstlst null)])
+    (eval-under-env e2 env)))
+
+(define (ifeq e1 e2 e3 e4)
+  (if (and (int? e1) (int? e2))
+      (if (= (int-num e1) (int-num e2))
+        (eval-under-env e3 null)
+        (eval-under-env e4 null))
+      (error "MUPL ifeq applied to non-number")))
 
 ;; Problem 4
 
@@ -130,14 +149,18 @@
 
 (define (mupl-map f)
   (letrec ([ret-fn (lambda(xs)
-                     (if (null? xs)
-                         null
-                         (cons (f (car xs) (ret-fn (cdr xs))))))])
+                     (if (isaunit xs)                         
+                         aunit
+                         (apair (f (fst xs)) (ret-fn (snd xs)))))])
     ret-fn))  
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
-        "CHANGE (notice map is now in MUPL scope)"))
+        (call (var "map") (fun #f "x" (add (var "x") (int 9))))))
+
+(define (mupl-mapAddS i)
+  (mupl-map (lambda(x) (eval-under-env (add i x) null))))
+  
 
 ;; Challenge Problem
 
