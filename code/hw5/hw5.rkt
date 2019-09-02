@@ -30,18 +30,30 @@
       (f (car xs) (racket-foldr f (cdr xs) acc))))
 
 (define (mupl-foldr f xs acc)
-  (if (= 0 (int-num (isaunit xs)))
-      acc
-      (f (fst xs) (mupl-foldr f (snd xs) acc))))
+  (if (aunit? (eval-exp xs))
+      acc              
+      (f (apair-e1 xs) (mupl-foldr f (apair-e2 xs) acc))))
 
 (define (racketlist->mupllist xs)
   (racket-foldr (lambda(first second) (apair first second)) xs (aunit)))
 
-(define (mupllist->racketlist xs)
+(define (mupllist->racketlist2 xs)
   (mupl-foldr (lambda(first second) (list first second)) xs null))
 
-;; Problem 2
+(define (mupllist->racketlist xs) 
+  (if (aunit? xs)
+      (list)
+      (begin
+        (let ([fst (apair-e1 xs)]
+              [snd (apair-e2 xs)])              
+          (if (aunit? snd)
+              (list fst)
+              (begin
+                (letrec ([helper-fn (lambda(xs) (cons (apair-e1 xs) (mupllist->racketlist (apair-e2 xs))))])
+                  (helper-fn xs))))))))
 
+
+;; Problem 2
 ;; lookup a variable in an environment
 ;; Do NOT change this function
 (define (envlookup env str)
