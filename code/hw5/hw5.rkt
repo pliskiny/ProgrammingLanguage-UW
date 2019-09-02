@@ -30,7 +30,7 @@
       (f (car xs) (racket-foldr f (cdr xs) acc))))
 
 (define (mupl-foldr f xs acc)
-  (if (isaunit xs)
+  (if (= 0 (int-num (isaunit xs)))
       acc
       (f (fst xs) (mupl-foldr f (snd xs) acc))))
 
@@ -60,7 +60,9 @@
   (cond [(aunit? e) e]
 
         [(isaunit? e)
-         (if (aunit? (isaunit-e e)) 1 0)]
+         (if (aunit? (eval-under-env (isaunit-e e) env))
+             (int 1)
+             (int 0))]         
 
         [(var? e) 
          (envlookup env (var-string e))]
