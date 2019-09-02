@@ -1,0 +1,13 @@
+#lang racket
+
+(define (my-cons fst snd)
+  (lambda(pick)
+    (if (= pick 1)
+        fst
+        snd)))
+
+(define (my-car pair)
+  (pair 1))
+
+(define (my-cdr pair)
+  (pair 2))
