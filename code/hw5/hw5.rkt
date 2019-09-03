@@ -116,7 +116,7 @@
         
 ;; Problem 3
 (define (ifaunit e1 e2 e3)
-  (if (isaunit e1) (eval-exp e2) (eval-exp e3)))
+  (if (aunit? (eval-exp e1)) (eval-exp e2) (eval-exp e3)))  
 
 (define (add-new-var-env elm env)
   (let ([name (car elm)]
