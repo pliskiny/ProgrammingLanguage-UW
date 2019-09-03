@@ -70,16 +70,16 @@
 
 (define (eval-under-env e env)
   (cond [(aunit? e) e]
-
+        [(closure? e) e]
+        [(int? e) e]
+        
         [(isaunit? e)
          (if (aunit? (eval-under-env (isaunit-e e) env))
              (int 1)
              (int 0))]         
 
         [(var? e) 
-         (envlookup env (var-string e))]
-
-        [(int? e) e]
+         (eval-under-env (envlookup env (var-string e)) env)]        
 
         [(add? e) 
          (let ([v1 (eval-under-env (add-e1 e) env)] [v2 (eval-under-env (add-e2 e) env)])
@@ -127,10 +127,7 @@
                         [env-of-closure (cons (cons arg-name actual-arg) (closure-env exp-of-closure))])
                  (eval-under-env body-of-fun env-of-closure))
                (error "call e1 e2, e1 is not closure")))]
-
-        [(closure? e) e]
-        
-        ;; CHANGE add more cases here
+      
         [#t (error (format "bad MUPL expression: ~v" e))]))
         
 ;; Problem 3
