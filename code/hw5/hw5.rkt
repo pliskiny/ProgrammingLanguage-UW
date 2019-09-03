@@ -35,36 +35,18 @@
       (f (apair-e1 xs) (mupl-foldr f (apair-e2 xs) acc))))
 
 (define (racketlist->mupllist xs)
-  (racket-foldr (lambda(first second) (apair first second)) xs (aunit)))
+  (racket-foldr apair xs (aunit)))
 
-(define (mupllist->racketlist2 xs)
-  (mupl-foldr (lambda(first second) (list first second)) xs null))
-
-(define (mupllist->racketlist xs) 
-  (if (aunit? xs)
-      (list)
-      (begin
-        (let ([fst (apair-e1 xs)]
-              [snd (apair-e2 xs)])              
-          (if (aunit? snd)
-              (list fst)
-              (begin
-                (letrec ([helper-fn (lambda(xs) (cons (apair-e1 xs) (mupllist->racketlist (apair-e2 xs))))])
-                  (helper-fn xs))))))))
+(define (mupllist->racketlist xs)
+  (mupl-foldr cons xs null))
 
 
 ;; Problem 2
-;; lookup a variable in an environment
-;; Do NOT change this function
 (define (envlookup env str)
   (cond [(null? env) (error "unbound variable during evaluation" str)]
         [(equal? (car (car env)) str) (cdr (car env))]
         [#t (envlookup (cdr env) str)]))
 
-;; Do NOT change the two cases given to you.  
-;; DO add more cases for other kinds of MUPL expressions.
-;; We will test eval-under-env by calling it directly even though
-;; "in real life" it would be a helper function of eval-exp.
 (define (eval-exp e)
   (eval-under-env e null))
 
@@ -118,20 +100,21 @@
          (closure (list) e)]
 
         [(call? e)
-         (let ([exp-of-closure (call-funexp e)])
-           (if (closure? exp-of-closure)
-               (letrec ([exp-of-fun (closure-fun exp-of-closure)]                        
-                        [body-of-fun (fun-body exp-of-fun)]
-                        [arg-name (fun-formal exp-of-fun)] 
-                        [actual-arg (eval-under-env (call-actual e) env)]                             
-                        [env-of-closure (cons (cons arg-name actual-arg) (closure-env exp-of-closure))])
-                 (eval-under-env body-of-fun env-of-closure))
-               (error "call e1 e2, e1 is not closure")))]
-      
+         (let ([closure-exp (call-funexp e)]
+               [actual-arg (eval-under-env (call-actual e) env)])
+           (if (closure? closure-exp)
+               (let ([closure-evn (closure-env closure-exp)]
+                     [closure-fun (closure-fun closure-exp)])
+                 (if (and (pair? closure-env) (fun? closure-fun))
+                     (let ([arg-name (fun-formal closure-fun)]
+                              [fun-body (fun-body closure-fun)])
+                       (eval-under-env fun-body (cons (cons arg-name actual-arg) closure-env)))
+                     (error "closure env is not pair or closure fun is not fun")))
+               (error "not closure")))]
+        
         [#t (error (format "bad MUPL expression: ~v" e))]))
         
 ;; Problem 3
-
 (define (ifaunit e1 e2 e3)
   (if (isaunit e1) (eval-exp e2) (eval-exp e3)))
 
