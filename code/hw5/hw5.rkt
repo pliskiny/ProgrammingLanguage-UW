@@ -94,22 +94,21 @@
              (error "not apair, can not get second part")))]        
 
         [(mlet? e)
-         (eval-under-env (mlet-body e) (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) null))]
+         (eval-under-env (mlet-body e) (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) env))]
 
         [(fun? e)
-         (closure (list) e)]
+         (closure env e)]         
 
         [(call? e)
-         (let ([closure-exp (call-funexp e)]
-               [actual-arg (eval-under-env (call-actual e) env)])
-           (if (closure? closure-exp)
-               (let ([closure-evn (closure-env closure-exp)]
-                     [closure-fun (closure-fun closure-exp)])
-                 (if (and (pair? closure-env) (fun? closure-fun))
-                     (let ([arg-name (fun-formal closure-fun)]
-                              [fun-body (fun-body closure-fun)])
-                       (eval-under-env fun-body (cons (cons arg-name actual-arg) closure-env)))
-                     (error "closure env is not pair or closure fun is not fun")))
+         (let ([closure-e (call-funexp e)]
+               [arg-val (eval-under-env (call-actual e) env)])
+           (if (closure? closure-e)
+               (let ([env (closure-env closure-e)]
+                     [func (closure-fun closure-e)])
+                 (if (and (list? env) (fun? func))
+                     (let ([arg-name (fun-formal func)] [body (fun-body func)])
+                       (eval-under-env body (cons (cons arg-name arg-val) env)))
+                     (error "closure env is not list or closure fun is not fun")))
                (error "not closure")))]
         
         [#t (error (format "bad MUPL expression: ~v" e))]))
@@ -135,21 +134,31 @@
       (error "MUPL ifeq applied to non-number")))
 
 ;; Problem 4
-(define (racket-map f)
-  (letrec ([ret-fn (lambda(xs)
-                     (if (null? xs)                         
-                         null
-                         (cons (f (car xs)) (ret-fn (cdr xs)))))])
-    ret-fn))
+(define racket-curry-map
+  (lambda(mapping-fn)
+    (letrec ([ret-fn (lambda(xs)
+                       (if (null? xs)
+                           null
+                           (cons (mapping-fn (car xs)) (ret-fn (cdr xs)))))])
+      ret-fn)))
 
-(define (mupl-map f)
-  (letrec ([ret-fn (fun #f "xs"
+(define mupl-curry-map
+  (lambda(mapping-fn)
+    (letrec ([ret-fn (lambda(xs)
+                       (if (aunit? xs)
+                           (aunit)
+                           (apair (mapping-fn (fst xs)) (ret-fn (snd xs)))))])
+      ret-fn)))
+                       
+;; mlet (var e body)
+(define mupl-map
+  (fun #f "mfn"
+       (mlet "ret-fn" (fun #f "xs"
                         (if (isaunit (var "xs"))
                             (aunit)
-                            (apair (call (eval-exp f) (fst (var "xs"))) (call (eval-exp ret-fn) (snd (var "xs"))))))])
-    ret-fn))
+                            (apair (call (var "mfn") (fst (var "xs"))) (call (var "ret-fn") (snd (var "xs"))))))
+             (var "ret-fn"))))
   
-
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
